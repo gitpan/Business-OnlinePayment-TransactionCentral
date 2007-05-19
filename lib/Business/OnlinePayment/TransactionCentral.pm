@@ -8,7 +8,7 @@ use Business::OnlinePayment::HTTPS 0.02;
 use vars qw($VERSION @ISA $DEBUG);
 
 @ISA = qw(Business::OnlinePayment::HTTPS);
-$VERSION = '0.01';
+$VERSION = '0.03';
 $DEBUG = 0;
 
 sub set_defaults {
@@ -18,7 +18,9 @@ sub set_defaults {
     $self->port('443');
     $self->path('/billing/TransactionCentral/');
 
-    $self->build_subs(qw( order_number avs_code cvv2_response ));
+    $self->build_subs(qw( order_number avs_code cvv2_response
+                          response_page response_code response_headers
+                     ));
 }
 
 sub submit {
@@ -59,11 +61,14 @@ sub submit {
       $content{'expiration'} =~ /^(\d+)\D+\d*(\d{2})$/
         or croak "unparsable expiration ". $content{'expiration'};
       my( $month, $year ) = ( $1, $2 );
-      #$month = '0'. $month if $month =~ /^\d$/;
+      $month = '0'. $month if $month =~ /^\d$/;
       $content{'CCMonth'} = $month;
       $content{'CCYear'} = $year;
 
-      #push @required_fields, qw( amount card_numb
+      push @required_fields, qw( amount card_number expiration
+                                 name address zip
+                               );
+
     } elsif ( $action =~ /^\s*authorization\s*only\s*$/i ) {
       croak "Authorizaiton Only is not supported by Transaction Central";
     } elsif ( $action =~ /^\s*post\s*authorization\s*$/i ) {
@@ -77,12 +82,19 @@ sub submit {
       croak "Unknown action $action";
     }
 
-  } elsif ( $content{'type'} =~ /^check$/i ) {
+  } elsif ( $content{'type'} =~ /^e?check$/i ) {
 
     if ( $action =~ /^\s*normal\s*authorization\s*$/i ) {
-      $url .= 'processcheck.asp';
+      $url .= 'processcheckonline.asp';
       $content{'AccountNo'} = $content{'account_number'};
-      $content{'TRANSTYPE'} = $content{'account_type'} =~ /^s/i ? 'SA' : 'CK';
+      $content{'TRANSTYPE'} =
+        ( exists($content{account_type}) && $content{account_type} =~ /^s/i )
+        ? 'SA'
+        : 'CK';
+
+      push @required_fields, qw( amount account_number routing_code
+                                 name
+                               );
 
     } elsif ( $action =~ /^\s*authorization\s*only\s*$/i ) {
       croak "Authorizaiton Only is not supported by Transaction Central";
@@ -100,6 +112,8 @@ sub submit {
   $self->path($url);
   $self->content(%content);
 
+  $self->required_fields(@required_fields);
+
   my @fields = qw(
     MerchantID RegKey Amount REFID AccountNo CCMonth CCYear NameonAccount
     AVSADDR AVSZIP CCRURL CVV2 USER1 USER2 USER3 USER4 TrackData
@@ -107,17 +121,16 @@ sub submit {
     DESCRIPTION DESCDATE TRANSTYPE TRANSROUTE
   );
 
-  #my( $page, $response, %reply_headers ) =
-  my( $page, $response ) =
+  my( $page, $response, %reply_headers ) =
     $self->https_post( $self->get_fields( @fields ) );
 
-  warn "\n" if $DEBUG > 1;
-  if ( $DEBUG > 2 ) {
-    warn "response: $response\n";
-   # warn "reply headers: ".
-   #      join(', ', map "$_ => $reply_headers{$_}", keys %reply_headers ). "\n";
-  }
-  warn "raw response: $page\n" if $DEBUG > 1;
+  $self->response_code( $response );
+  $self->response_page( $page );
+  $self->response_headers( \%reply_headers );
+
+  #trim off <html><body> </body></html> around the response we want
+  $page =~ s/^[\s\n]*<html>[\s\n]*<body>[\s\n]*//;
+  $page =~ s/[\s\n]*<\/body>[\s\n]*<\/html>[\s\n]*$//;
 
   my %return = map { /^(\w+)=(.*)$/ ? ( $1 => $2 ) : () } split(/&/, $page);
 
@@ -127,7 +140,7 @@ sub submit {
   $self->avs_code(      $return{'AVSCode'} );
   $self->cvv2_response( $return{'CVV2ResponseMsg'} );
 
-  if ( $return{'Auth'} =~ /^(\d+)$/ ) {
+  if ( $return{'Auth'} =~ /^\s*(\w+)\s*$/ ) {
 
     $self->is_success(1);
     $self->authorization( $return{'Auth'}   );
@@ -166,18 +179,13 @@ Business::OnlinePayment::TransactionCentral - Transaction Central backend module
 
 =head1 SYNOPSIS
 
-  use Business::OnlinePayment::TransactionCentral;
-  blah blah blah
-
-=head1 DESCRIPTION
-
   use Business::OnlinePayment;
 
   ####
   # One step transaction, the simple case.
   ####
 
-  my $tx = new Business::OnlinePayment("Capstone");
+  my $tx = new Business::OnlinePayment("TransactionCentral");
   $tx->content(
       type           => 'CC',
       login          => '10011', #MerchantID
@@ -203,17 +211,31 @@ Business::OnlinePayment::TransactionCentral - Transaction Central backend module
   } else {
       print "Card was rejected: ".$tx->error_message."\n";
   }
+=head1 DESCRIPTION
+
+This is a Business::OnlinePayment backend module for the Transaction Central
+(MerchantAnywhere, PRIMerchants) gateway.  It is only useful if you have a
+merchant account with MerchantAnywhere / PRIMerchants:
+
+http://www.merchantanywhere.com/
+http://www.merchantanywhere.com/ecshop/TC_elink.htm
+
+http://www.primerchants.com/
+http://www.primerchants.com/info/transactioncentral.asp
 
 =head1 SUPPORTED TRANSACTION TYPES
 
 =head2 CC, Visa, MasterCard, American Express, Discover
 
-Content required: type, login, password, action, amount, card_number, expiration.
+Content required: type, login, password, action, amount, card_number, expiration, name, address, zip.
+
+=head2 ECHECK
+
+Content required: type, login, password, action, amount, account_number, routing_code, name
 
 =head1 PREREQUISITES
 
   URI::Escape
-  #Tie::IxHash
 
   Net::SSLeay _or_ ( Crypt::SSLeay and LWP )
 
@@ -223,6 +245,13 @@ For detailed information see L<Business::OnlinePayment>.
 
 =head1 NOTE
 
+The newest publicly available documentation is available at:
+
+http://www.merchantanywhere.com/ecshop/TC%20Interface%20NEW.pdf
+
+It is somewhat out-of-date and contains a few discrepancies.  Google
+"TCInterfaceGuide" for current documentation.
+
 =head1 AUTHOR
 
 Ivan Kohler <ivan-transactioncentral@420.am>
@@ -230,6 +259,7 @@ Ivan Kohler <ivan-transactioncentral@420.am>
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2006 by Ivan Kohler
+Copyright (C) 2007 Freeside Internet Services, Inc.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

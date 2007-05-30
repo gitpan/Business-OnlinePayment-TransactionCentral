@@ -8,7 +8,7 @@ use Business::OnlinePayment::HTTPS 0.02;
 use vars qw($VERSION @ISA $DEBUG);
 
 @ISA = qw(Business::OnlinePayment::HTTPS);
-$VERSION = '0.03';
+$VERSION = '0.04';
 $DEBUG = 0;
 
 sub set_defaults {
@@ -140,7 +140,7 @@ sub submit {
   $self->avs_code(      $return{'AVSCode'} );
   $self->cvv2_response( $return{'CVV2ResponseMsg'} );
 
-  if ( $return{'Auth'} =~ /^\s*(\w+)\s*$/ ) {
+  if ( $return{'Auth'} =~ /^\s*(\w+)\s*$/ && lc($1) ne 'declined' ) {
 
     $self->is_success(1);
     $self->authorization( $return{'Auth'}   );

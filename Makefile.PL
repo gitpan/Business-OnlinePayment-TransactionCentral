@@ -6,7 +6,7 @@ WriteMakefile(
     NAME              => 'Business::OnlinePayment::TransactionCentral',
     VERSION_FROM      => 'lib/Business/OnlinePayment/TransactionCentral.pm', # finds $VERSION
     PREREQ_PM         => {
-                           'Business::OnlinePayment' => 0,
+                           'Business::OnlinePayment' => 3,
 
                            # for HTTPS (maybe it should be a separate dist?)
                            'URI::Escape' => 0,

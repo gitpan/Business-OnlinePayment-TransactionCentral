@@ -1,5 +1,10 @@
 Revision history for Perl extension Business::OnlinePayment::TransactionCentral.
 
+0.04  Wed May 30 11:53:00 PDT 2007
+        - depend on B:OP v3
+        - fix a "false success" problem caused by discrepancy between test and
+          live systems: "Auth" field comes back as "Declined" rather than empty
+
 0.03  Sat May 19 15:03:43 PDT 2007
         - add/finish ECHECK support (google of TCInterfaceGuide indicated
           s/processcheck.asp/processcheckonline.asp/)

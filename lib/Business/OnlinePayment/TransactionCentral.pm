@@ -8,7 +8,7 @@ use Business::OnlinePayment::HTTPS 0.02;
 use vars qw($VERSION @ISA $DEBUG);
 
 @ISA = qw(Business::OnlinePayment::HTTPS);
-$VERSION = '0.04';
+$VERSION = '0.05';
 $DEBUG = 0;
 
 sub set_defaults {
@@ -35,6 +35,7 @@ sub submit {
     'NameonAccount' => 'name',
     'AVSADDR'       => 'address',
     'AVSZIP'        => 'zip',
+    'Email'         => 'email',
     'CCRURL'        => \'',
     'CVV2'          => 'cvv2',
     'TransID'       => 'order_number',

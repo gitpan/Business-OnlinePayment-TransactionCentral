@@ -1,5 +1,8 @@
 Revision history for Perl extension Business::OnlinePayment::TransactionCentral.
 
+0.05  Wed Nov 14 13:26:38 PST 2007
+        - add email->Email mapping
+
 0.04  Wed May 30 11:53:00 PDT 2007
         - depend on B:OP v3
         - fix a "false success" problem caused by discrepancy between test and

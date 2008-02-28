@@ -2,6 +2,9 @@ BEGIN { $| = 1; print "1..1\n"; }
 
 use Business::OnlinePayment;
 
+require "t/lib/test_account.pl";
+my($login, $regkey) = test_account_or_skip();
+
 my $ctx = Business::OnlinePayment->new("TransactionCentral");
 
 #$Business::OnlinePayment::TransactionCentral::DEBUG = 1;
@@ -9,8 +12,8 @@ my $ctx = Business::OnlinePayment->new("TransactionCentral");
 
 $ctx->content(
     type           => 'CHECK',
-    login          => '10011',
-    password       => 'KK48NPYEJHMAH6DK', #regkey
+    login          => $login,
+    password       => $regkey,
     action         => 'Normal Authorization',
     amount         => '49.95',
     invoice_number => '100100',

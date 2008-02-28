@@ -11,6 +11,9 @@ if ( $@ ) {
 
 use Business::OnlinePayment;
 
+require "t/lib/test_account.pl";
+my($login, $regkey) = test_account_or_skip();
+
 my $tx = new Business::OnlinePayment("TransactionCentral");
 
 #$Business::OnlinePayment::HTTPS::DEBUG = 1;
@@ -20,8 +23,8 @@ my $tx = new Business::OnlinePayment("TransactionCentral");
 
 $tx->content(
     type           => 'VISA',
-    login          => '10011',
-    password       => 'KK48NPYEJHMAH6DK', #regkey
+    login          => $login,
+    password       => $regkey,
     action         => 'Normal Authorization',
     description    => 'Business::OnlinePayment::TransactionCentral test',
     amount         => '54.01',

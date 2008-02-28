@@ -14,12 +14,15 @@ if ( $@ ) {
 
 use Business::OnlinePayment;
 
+require "t/lib/test_account.pl";
+my($login, $regkey) = test_account_or_skip();
+
 my $tx = new Business::OnlinePayment("TransactionCentral");
 
 $tx->content(
     type           => 'VISA',
-    login          => '10011',
-    password       => 'KK48NPYEJHMAH6DK', #regkey
+    login          => $login,
+    password       => $regkey,
     action         => 'Normal Authorization',
     amount         => '32.32',
     #card_number    => '4012000000001',

@@ -8,7 +8,7 @@ use Business::OnlinePayment::HTTPS 0.02;
 use vars qw($VERSION @ISA $DEBUG);
 
 @ISA = qw(Business::OnlinePayment::HTTPS);
-$VERSION = '0.05';
+$VERSION = '0.06';
 $DEBUG = 0;
 
 sub set_defaults {

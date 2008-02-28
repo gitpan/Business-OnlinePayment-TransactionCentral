@@ -1,5 +1,8 @@
 Revision history for Perl extension Business::OnlinePayment::TransactionCentral.
 
+0.06  Wed Feb 27 16:49:17 PST 2008
+        - update tests with new regkey for TC test account
+
 0.05  Wed Nov 14 13:26:38 PST 2007
         - add email->Email mapping
 
